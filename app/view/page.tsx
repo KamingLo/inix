@@ -16,41 +16,35 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState({ productName: '', price: '', quantity: '' });
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('inix_products_v1');
-      const storedProducts: Product[] = raw ? JSON.parse(raw) : [];
-      setProducts(storedProducts);
-    }
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const newProduct: Product = {
-      id: crypto.randomUUID(),
-      productName: form.productName,
-      price: Number(form.price),
-      quantity: Number(form.quantity),
-    };
-
-    const raw = localStorage.getItem('inix_products_v1');
-    const currentProducts: Product[] = raw ? JSON.parse(raw) : [];
-    const newProducts = [...currentProducts, newProduct];
-
-    localStorage.setItem('inix_products_v1', JSON.stringify(newProducts));
-    setProducts(newProducts);
-    setForm({ productName: '', price: '', quantity: '' });
+  const fetchProducts = async () => {
+    const res = await fetch('/api/products'); // Ini akan memanggil File 2
+    const data = await res.json();
+    setProducts(data);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Yakin ingin menghapus produk ini?')) {
-      const raw = localStorage.getItem('inix_products_v1');
-      const currentProducts: Product[] = raw ? JSON.parse(raw) : [];
-      const newProducts = currentProducts.filter((p) => p.id !== id);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-      localStorage.setItem('inix_products_v1', JSON.stringify(newProducts));
-      setProducts(newProducts);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch('/api/products', { // Ini akan memanggil File 2
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productName: form.productName,
+        price: Number(form.price),
+        quantity: Number(form.quantity),
+      }),
+    });
+    setForm({ productName: '', price: '', quantity: '' });
+    fetchProducts();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Yakin ingin menghapus produk ini?')) {
+      await fetch(`/api/products/${id}`, { method: 'DELETE' }); // Ini akan memanggil File 3
+      fetchProducts();
     }
   };
 
@@ -77,9 +71,7 @@ export default function HomePage() {
                   <Form.Control
                     type="text"
                     value={form.productName}
-                    onChange={(e) =>
-                      setForm({ ...form, productName: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, productName: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -89,9 +81,7 @@ export default function HomePage() {
                   <Form.Control
                     type="number"
                     value={form.price}
-                    onChange={(e) =>
-                      setForm({ ...form, price: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -101,9 +91,7 @@ export default function HomePage() {
                   <Form.Control
                     type="number"
                     value={form.quantity}
-                    onChange={(e) =>
-                      setForm({ ...form, quantity: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -147,7 +135,7 @@ export default function HomePage() {
                     <Button
                       variant="warning"
                       size="sm"
-                      href={`/view/${p.id}`}
+                      href={`/view/${p.id}`} // Ini untuk navigasi halaman
                       className="me-2"
                     >
                       <PencilSquare className="me-1" />

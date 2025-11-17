@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Container, Form, Button, Card, Alert } from 'react-bootstrap';
+import { Container, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Save, Trash, ArrowLeft, ExclamationTriangle, ExclamationOctagon, HourglassSplit} from 'react-bootstrap-icons';
+import { Save, Trash, ArrowLeft, ExclamationTriangle, HourglassSplit } from 'react-bootstrap-icons';
 
 type Product = {
   id: string;
@@ -13,122 +13,84 @@ type Product = {
   quantity: number;
 };
 
-export default function ViewPage() {
+export default function ViewProductPage() {
   const params = useParams();
   const router = useRouter();
-
   const id = params?.id;
 
-  if (!id || Array.isArray(id)) {
-    return (
-      <Container className="py-5" data-bs-theme="dark">
-        <Alert variant="danger">
-          <ExclamationOctagon size={24} className="me-2" />
-          ID tidak valid
-        </Alert>
-        <Button variant="secondary" onClick={() => router.push('/view')}>
-          <ArrowLeft className="me-2" />
-          Kembali
-        </Button>
-      </Container>
-    );
-  }
-
-  const [products, setProducts] = useState<Product[]>([]);
+  const [product, setProduct] = useState<Product | null>(null);
   const [form, setForm] = useState({ productName: '', price: '', quantity: '' });
   const [loading, setLoading] = useState(true);
-  const [productFound, setProductFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadProducts = () => {
-      if (typeof window === 'undefined') return;
+    if (!id) return;
 
-      const raw = localStorage.getItem('inix_products_v1');
-      const storedProducts: Product[] = raw ? JSON.parse(raw) : [];
-      setProducts(storedProducts);
-
-      const found = storedProducts.find((p) => p.id === id);
-      if (found) {
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        if (!res.ok) throw new Error('Produk tidak ditemukan');
+        const data: Product = await res.json();
+        setProduct(data);
         setForm({
-          productName: found.productName,
-          price: String(found.price),
-          quantity: String(found.quantity),
+          productName: data.productName,
+          price: String(data.price),
+          quantity: String(data.quantity),
         });
-        setProductFound(true);
-      } else {
-        setProductFound(false);
+      } catch (err: any) {
+        setError(err.message || 'Gagal mengambil data produk');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    setTimeout(loadProducts, 0);
+
+    fetchProduct();
   }, [id]);
 
-  const updateProduct = (id: string, updated: Partial<Product>) => {
-    const raw = localStorage.getItem('inix_products_v1');
-    const currentProducts: Product[] = raw ? JSON.parse(raw) : [];
-    const newProducts = currentProducts.map((p) =>
-      p.id === id ? { ...p, ...updated } : p
-    );
-    localStorage.setItem('inix_products_v1', JSON.stringify(newProducts));
-    setProducts(newProducts);
-  };
-
-  const deleteProduct = (id: string) => {
-    const raw = localStorage.getItem('inix_products_v1');
-    const currentProducts: Product[] = raw ? JSON.parse(raw) : [];
-    const newProducts = currentProducts.filter((p) => p.id !== id);
-    localStorage.setItem('inix_products_v1', JSON.stringify(newProducts));
-    setProducts(newProducts);
-  };
-
-  const handleSave = () => {
-    updateProduct(id, {
-      productName: form.productName,
-      price: Number(form.price),
-      quantity: Number(form.quantity),
-    });
-    alert('Berhasil disimpan!');
-  };
-
-  const handleDelete = () => {
-    if (confirm('Yakin ingin menghapus produk ini?')) {
-      deleteProduct(id);
-      router.push('/view');
+  const handleSave = async () => {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productName: form.productName,
+          price: Number(form.price),
+          quantity: Number(form.quantity),
+        }),
+      });
+      if (!res.ok) throw new Error('Gagal memperbarui produk');
+      const updated: Product = await res.json();
+      setProduct(updated);
+      alert('Berhasil diperbarui!');
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
-  if (loading)
-    return (
-      <Container className="py-5" data-bs-theme="dark">
-        <p>
-          <HourglassSplit className="me-2" />
-          Loading...
-        </p>
-      </Container>
-    );
+  const handleDelete = async () => {
+    if (!confirm('Yakin ingin menghapus produk ini?')) return;
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Gagal menghapus produk');
+      alert('Produk berhasil dihapus');
+      router.push('/'); // arahkan ke halaman list
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
-  if (!productFound)
-    return (
-      <Container className="py-5" data-bs-theme="dark">
-        <Alert variant="warning">
-          <ExclamationTriangle size={24} className="me-2" />
-          <h2>Produk Tidak Ditemukan</h2>
-        </Alert>
-        <Button variant="secondary" onClick={() => router.push('/view')}>
-          <ArrowLeft className="me-2" />
-          Kembali
-        </Button>
-      </Container>
-    );
+  if (!id) return <Container className="py-5"><Alert variant="danger">ID tidak valid</Alert></Container>;
+  if (loading) return <Container className="py-5"><Spinner animation="border" /> Loading...</Container>;
+  if (error) return <Container className="py-5"><Alert variant="danger">{error}</Alert></Container>;
+  if (!product) return <Container className="py-5"><Alert variant="warning">Produk tidak ditemukan</Alert></Container>;
 
   return (
     <Container className="py-5" data-bs-theme="dark">
       <h2 className="mb-3 text-white">Edit Produk</h2>
-
       <Card>
         <Card.Body>
           <Form.Group className="mb-3" controlId="productName">
-            <Form.Label>Product Name</Form.Label>
+            <Form.Label>Nama Produk</Form.Label>
             <Form.Control
               type="text"
               value={form.productName}
@@ -137,7 +99,7 @@ export default function ViewPage() {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="price">
-            <Form.Label>Price</Form.Label>
+            <Form.Label>Harga</Form.Label>
             <Form.Control
               type="number"
               value={form.price}
@@ -165,11 +127,7 @@ export default function ViewPage() {
         </Card.Body>
       </Card>
 
-      <Button
-        variant="secondary"
-        className="mt-3"
-        onClick={() => router.push('/view')}
-      >
+      <Button variant="secondary" className="mt-3" onClick={() => router.push('/')}>
         <ArrowLeft className="me-2" />
         Kembali
       </Button>
