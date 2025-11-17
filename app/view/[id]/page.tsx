@@ -73,7 +73,7 @@ export default function ViewProductPage() {
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Gagal menghapus produk');
       alert('Produk berhasil dihapus');
-      router.push('/'); // arahkan ke halaman list
+      router.push('/view');
     } catch (err: any) {
       alert(err.message);
     }
@@ -127,7 +127,7 @@ export default function ViewProductPage() {
         </Card.Body>
       </Card>
 
-      <Button variant="secondary" className="mt-3" onClick={() => router.push('/')}>
+      <Button variant="secondary" className="mt-3" onClick={() => router.push('/view')}>
         <ArrowLeft className="me-2" />
         Kembali
       </Button>
