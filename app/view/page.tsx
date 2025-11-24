@@ -1,9 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Table, Alert } from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Form,
+  Button,
+  Table,
+  Alert,
+} from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { PlusCircleFill, PencilSquare, Trash, CashCoin, Archive } from 'react-bootstrap-icons';
+import {
+  PlusCircleFill,
+  PencilSquare,
+  Trash,
+  CashCoin,
+  Archive,
+} from 'react-bootstrap-icons';
 
 type Product = {
   id: string;
@@ -14,21 +29,44 @@ type Product = {
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState({ productName: '', price: '', quantity: '' });
+  const [form, setForm] = useState({
+    productName: '',
+    price: '',
+    quantity: '',
+  });
 
+  // Fetch produk untuk dipanggil kapan saja (POST/DELETE)
   const fetchProducts = async () => {
-    const res = await fetch('/api/products'); // Ini akan memanggil File 2
+    const res = await fetch('/api/products');
     const data = await res.json();
     setProducts(data);
   };
 
+  // Load awal menggunakan effect dengan async wrapper
   useEffect(() => {
-    fetchProducts();
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+
+      if (isMounted) {
+        setProducts(data);
+      }
+    };
+
+    loadProducts();
+
+    // Cleanup untuk mencegah race condition
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/products', { // Ini akan memanggil File 2
+
+    await fetch('/api/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -37,13 +75,14 @@ export default function HomePage() {
         quantity: Number(form.quantity),
       }),
     });
+
     setForm({ productName: '', price: '', quantity: '' });
     fetchProducts();
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Yakin ingin menghapus produk ini?')) {
-      await fetch(`/api/products/${id}`, { method: 'DELETE' }); // Ini akan memanggil File 3
+      await fetch(`/api/products/${id}`, { method: 'DELETE' });
       fetchProducts();
     }
   };
@@ -65,13 +104,16 @@ export default function HomePage() {
                 <PlusCircleFill className="me-2" />
                 Tambah Produk Baru
               </Card.Title>
+
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="productName">
                   <Form.Label>Product Name</Form.Label>
                   <Form.Control
                     type="text"
                     value={form.productName}
-                    onChange={(e) => setForm({ ...form, productName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, productName: e.target.value })
+                    }
                     required
                   />
                 </Form.Group>
@@ -81,7 +123,9 @@ export default function HomePage() {
                   <Form.Control
                     type="number"
                     value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, price: e.target.value })
+                    }
                     required
                   />
                 </Form.Group>
@@ -91,7 +135,9 @@ export default function HomePage() {
                   <Form.Control
                     type="number"
                     value={form.quantity}
-                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, quantity: e.target.value })
+                    }
                     required
                   />
                 </Form.Group>
@@ -116,6 +162,7 @@ export default function HomePage() {
                 <th>Aksi</th>
               </tr>
             </thead>
+
             <tbody>
               {products.length === 0 && (
                 <tr>
@@ -125,6 +172,7 @@ export default function HomePage() {
                   </td>
                 </tr>
               )}
+
               {products.map((p) => (
                 <tr key={p.id}>
                   <td>{p.productName}</td>
@@ -135,12 +183,13 @@ export default function HomePage() {
                     <Button
                       variant="warning"
                       size="sm"
-                      href={`/view/${p.id}`} // Ini untuk navigasi halaman
+                      href={`/view/${p.id}`}
                       className="me-2"
                     >
                       <PencilSquare className="me-1" />
                       View/Edit
                     </Button>
+
                     <Button
                       variant="danger"
                       size="sm"
@@ -158,7 +207,8 @@ export default function HomePage() {
           <Alert variant="info" className="mt-3">
             <h4 className="alert-heading mb-0 d-flex align-items-center">
               <CashCoin className="me-2" />
-              Total Keseluruhan: <strong>{totalKeseluruhan}</strong>
+              Total Keseluruhan:{' '}
+              <strong>{totalKeseluruhan}</strong>
             </h4>
           </Alert>
         </Col>

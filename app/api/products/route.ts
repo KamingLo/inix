@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma'
+import { error } from 'console';
 
 export async function GET() {
   try {
     const products = await prisma.product.findMany();
     return NextResponse.json(products);
   } catch (error) {
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json({message: `error mengambil data: ${error}`}, { status: 500 });
   }
 }
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     const { productName, price, quantity } = await req.json();
 
     if (!productName || !price || !quantity) {
-      return NextResponse.json({ error: 'Input tidak lengkap' }, { status: 400 });
+      return NextResponse.json({ error: `Input tidak lengkap :${error}` }, { status: 400 });
     }
 
     const product = await prisma.product.create({
@@ -27,6 +28,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Gagal membuat produk' }, { status: 500 });
+    return NextResponse.json({ error: `Gagal membuat produk :${error}` }, { status: 500 });
   }
 }

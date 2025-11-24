@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Container, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Save, Trash, ArrowLeft, ExclamationTriangle, HourglassSplit } from 'react-bootstrap-icons';
+import { Save, Trash, ArrowLeft } from 'react-bootstrap-icons';
 
 type Product = {
   id: string;
@@ -37,8 +37,10 @@ export default function ViewProductPage() {
           price: String(data.price),
           quantity: String(data.quantity),
         });
-      } catch (err: any) {
-        setError(err.message || 'Gagal mengambil data produk');
+      } catch (err: unknown) {
+        if(err instanceof Error){
+            setError(err.message || 'Gagal mengambil data produk');
+        }
       } finally {
         setLoading(false);
       }
@@ -62,8 +64,10 @@ export default function ViewProductPage() {
       const updated: Product = await res.json();
       setProduct(updated);
       alert('Berhasil diperbarui!');
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+        if(err instanceof Error){
+            alert(err.message);
+        }
     }
   };
 
@@ -74,8 +78,10 @@ export default function ViewProductPage() {
       if (!res.ok) throw new Error('Gagal menghapus produk');
       alert('Produk berhasil dihapus');
       router.push('/view');
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+        if(err instanceof Error){
+            alert(err.message);
+        }
     }
   };
 
