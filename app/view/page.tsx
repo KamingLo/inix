@@ -35,14 +35,12 @@ export default function HomePage() {
     quantity: '',
   });
 
-  // Fetch produk untuk dipanggil kapan saja (POST/DELETE)
   const fetchProducts = async () => {
     const res = await fetch('/api/products');
     const data = await res.json();
     setProducts(data);
   };
 
-  // Load awal menggunakan effect dengan async wrapper
   useEffect(() => {
     let isMounted = true;
 
@@ -57,7 +55,6 @@ export default function HomePage() {
 
     loadProducts();
 
-    // Cleanup untuk mencegah race condition
     return () => {
       isMounted = false;
     };
