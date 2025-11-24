@@ -1,16 +1,27 @@
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-  });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+declare global {
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined;
 }
 
-export default prisma;
+// Lokasi SQLite lokal
+const filePath = path.join(process.cwd(), 'prisma/local.db');
+
+const config = {
+  datasources: {
+    db: {
+      url: 'file:' + filePath,
+    },
+  },
+};
+
+const prismaClient =
+  global.prisma ??
+  new PrismaClient(config);
+
+// Cache prisma di global untuk development Hot Reload
+if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
+
+export default prismaClient;
